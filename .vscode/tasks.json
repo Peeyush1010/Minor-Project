@@ -1,0 +1,79 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Backend",
+      "type": "shell",
+      "command": "python -m uvicorn backend.app.main:app --port 8000 --reload",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "backend" }
+    },
+    {
+      "label": "Start Frontend",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "frontend" }
+    },
+    {
+      "label": "Run Tests",
+      "type": "shell",
+      "command": "python -m pytest -q",
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Build Frontend",
+      "type": "shell",
+      "command": "npm run build",
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Pipeline: Ingest SoLEXS",
+      "type": "shell",
+      "command": "python -m backend.pipeline.ingest.solexs",
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Pipeline: Ingest HEL1OS",
+      "type": "shell",
+      "command": "python -m backend.pipeline.ingest.hel1os",
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Pipeline: Detect Flares",
+      "type": "shell",
+      "command": "python -m backend.pipeline.run_detection",
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Pipeline: GOES Calibration",
+      "type": "shell",
+      "command": "python -m backend.pipeline.run_goes",
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Pipeline: Evaluation",
+      "type": "shell",
+      "command": "python -m backend.pipeline.run_eval",
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Pipeline: Forecast Model",
+      "type": "shell",
+      "command": "python -m backend.pipeline.forecast.model",
+      "isBackground": false,
+      "problemMatcher": []
+    }
+  ]
+}

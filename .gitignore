@@ -1,0 +1,27 @@
+# --- python ---
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# --- node / frontend ---
+node_modules/
+frontend/dist/
+
+# --- env / secrets ---
+.env
+
+# --- raw data (too big for git; re-downloadable from ISSDC PRADAN) ---
+dataset/
+
+# --- generated pipeline data (rebuild: python -m backend.pipeline.run_detection etc.) ---
+backend/data/processed/
+backend/data/goes/
+backend/data/catalogs/*.parquet
+backend/data/merged/
+backend/data/eda/
+
+# --- OS / editor / tooling noise ---
+.DS_Store
+Thumbs.db
+.freebuff/

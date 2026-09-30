@@ -1,0 +1,25 @@
+{
+  "model": "lightgbm",
+  "horizon_s": 1800,
+  "train_samples": 12256212,
+  "test_samples": 4085404,
+  "test_pos_rate": 0.0988462830114231,
+  "auc": 0.8198853320767198,
+  "threshold_far2day": 0.9860244657406467,
+  "flares_in_test": 6,
+  "alerted_flares": 6,
+  "median_lead_s": 192.0,
+  "p90_lead_s": 798.0,
+  "feature_importance": {
+    "since_last_flare_s": 5797,
+    "mean3600": 3993,
+    "bg": 3273,
+    "mean900": 3052,
+    "max300": 2183,
+    "mean60": 1621,
+    "excess_sigma": 1554,
+    "mean300": 1451,
+    "max_over_mean300": 1051,
+    "slope300": 534
+  }
+}
