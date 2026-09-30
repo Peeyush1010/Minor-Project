@@ -79,8 +79,8 @@ const SECTIONS = [
   {
     id: "forecast",
     icon: "🔮",
-    title: "Forecast keywords (future / Major project)",
-    intro: "The prototype that becomes the Major project — shown in the dashboard only as a clearly-marked preview.",
+    title: "Forecast keywords — planned extension (Major project)",
+    intro: "The forecasting module is the planned extension of this work (Major project). A working prototype exists and is shown in the dashboard as a clearly-marked preview.",
     terms: [
       { k: "LightGBM", d: "A gradient-boosted decision-tree library — the ML model behind the forecast prototype. Fast, robust on tabular features, standard for this kind of time-series classification.", see: "Subtitle of the 'Future work' panel." },
       { k: "P(flare ≤ 30 min)", d: "The model's output: probability that a C-class-or-better flare erupts within the next 30 minutes, computed fresh every 60 s from trailing features.", see: "Y-axis of the purple panel's chart." },

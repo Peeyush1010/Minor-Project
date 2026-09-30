@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
 
 from backend.pipeline.catalog.master import load_master
 from backend.pipeline.config import CATALOGS, DETECT, GOES_DIR, MERGED_DIR
@@ -155,6 +156,81 @@ def dataset() -> dict:
     out["master_catalog_csv"] = str(mc.relative_to(CATALOGS.parents[2])).replace("\\", "/") \
         if mc.exists() else None
     return out
+
+
+@app.get("/api/dataset/download/{stem}")
+def dataset_download(stem: str, fmt: str = Query("parquet")) -> FileResponse:
+    """Download a merged-dataset deliverable (parquet or csv) or the manifest."""
+    if stem == "manifest":
+        p = MERGED_DIR / "manifest.json"
+        if not p.exists():
+            return JSONResponse({"error": "manifest not built"}, status_code=404)
+        return FileResponse(p, filename="merged_dataset_manifest.json", media_type="application/json")
+    if stem not in {"solexs_merged", "hel1os_merged", "merged_all_data"}:
+        return JSONResponse({"error": f"unknown dataset '{stem}'"}, status_code=404)
+    ext = "parquet" if fmt == "parquet" else "csv"
+    p = MERGED_DIR / f"{stem}.{ext}"
+    if not p.exists():
+        return JSONResponse({"error": f"{p.name} not built"}, status_code=404)
+    media = "application/octet-stream" if ext == "parquet" else "text/csv"
+    return FileResponse(p, filename=p.name, media_type=media)
+
+
+@app.get("/api/report/day")
+def report_day(from_: str = Query(None, alias="from"), to: str = Query(None)) -> dict:
+    """Exportable detection report for a day/range: events, metrics, provenance.
+
+    Re-runs the detector over the requested window (capped at 31 days) and
+    merges in calibrated classes from the master catalog.
+    """
+    import time as _time
+    t_start = _time.time()
+    f, t = _parse_range(from_, to)
+    if not f or not t:
+        return JSONResponse({"error": "provide from and to (YYYY-MM-DD)"}, status_code=400)
+    if (t - f).days > 31:
+        return JSONResponse({"error": "range capped at 31 days"}, status_code=400)
+    d0, d1 = f.strftime("%Y%m%d"), t.strftime("%Y%m%d")
+    days = [d for d in available_days("solexs", "SDD2") if d0 <= d <= d1]
+    df = read_series("solexs", "SDD2", days)
+    if df.empty:
+        return JSONResponse({"error": "no data for window"}, status_code=404)
+    tb, rb = resample_uniform(_to_unix(df.ts), df.rate_cps.to_numpy(), 10.0)
+    good = np.isfinite(rb)
+    events = detect_flares(tb[good], rb[good], None, DETECT)
+    m = load_master()
+    m_win = m[(m.start >= f) & (m.start <= t)] if len(m) else m
+    cal = json.loads((GOES_DIR / "solexs_calibration.json").read_text()) if \
+        (GOES_DIR / "solexs_calibration.json").exists() else {}
+    classes = {}
+    if len(m_win):
+        classes = m_win.class_proxy.value_counts().to_dict()
+    return JSONResponse(
+        {
+            "report": {
+                "generated_utc": pd.Timestamp.utcnow().isoformat(),
+                "pipeline": "Aditya-L1 Flare Watch nowcast v1.0 (SoLEXS SDD2, 10-s grid)",
+                "window": {"from": str(f), "to": str(t), "days": len(days)},
+                "events_detected": len(events),
+                "events": [
+                    {
+                        "start": pd.Timestamp(e.start_unix, unit="s").isoformat(),
+                        "peak": pd.Timestamp(e.peak_unix, unit="s").isoformat(),
+                        "end": pd.Timestamp(e.end_unix, unit="s").isoformat(),
+                        "peak_cps": round(float(e.peak_cps), 1),
+                        "excess_sigma": round(float(e.excess_sigma), 1),
+                        "duration_s": round(float(e.duration_s), 1),
+                    }
+                    for e in events
+                ],
+                "class_counts": classes,
+                "catalog_events_in_window": len(m_win),
+                "calibration": cal,
+                "runtime_s": round(_time.time() - t_start, 2),
+            }
+        },
+        headers={"Content-Disposition": 'attachment; filename="flare_detection_report.json"'},
+    )
 
 
 @app.get("/api/summary")
